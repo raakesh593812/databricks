@@ -1,0 +1,63 @@
+pool: viv-poc
+parameters:
+- name: jobsConfig
+  type: object
+  default:
+    cluster_1:
+      cluster_id: 1234-56789-abcde
+      libraries:
+      - pypi:
+          package: numpy
+          repo: http://my-pypi-repo.com
+      - pypi:
+          package: numpy
+          repo: http://my-pypi-repo.com
+    cluster_2:
+      cluster_id: 1234-56789-abcde
+      libraries:
+      - pypi:
+          package: numpy
+          repo: http://my-pypi-repo.com
+      - pypi:
+          package: numpy
+          repo: http://my-pypi-repo.com
+stages:
+- stage: ProcessClusters
+  displayName: "Process Each Cluster"
+  jobs:
+   - job:
+     steps:
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+             $myobject = '${{ convertToJson(parameters.jobsConfig) }}'  | ConvertFrom-Json 
+             $myobject | Out-File sample.json
+              foreach( $property in $myobject.psobject.properties.name )
+                {
+                  echo $property
+                $filename = $property+".json"
+                $cus = $myobject.$property.clusterid
+                echo $cus
+                $json = @{
+
+                    cluster_id = $myobject.$property.clusterid
+                    libraries = @()
+                }
+                $Packages = $myobject.$property.packages
+
+                foreach ($package in $Packages) {
+                    echo $package
+                    $json.libraries += @{
+                        pypi = @{
+                            package = $package
+                            repo = "http://my-pypi-repo.com"
+                        }
+                    }
+                }
+                $json | Convertto-Json -Depth 10 | Out-File $filename
+                }
+       
+
+      
+
